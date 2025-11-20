@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash
 from app import app, db, User, Product
 
 # Path to the data file
-DATA_PATH = '/tmp/file_attachments/proj/data_cleaned.csv'
+DATA_PATH = 'data_cleaned.csv'
 
 def seed_database():
     print(f"Checking data file at {DATA_PATH}...")

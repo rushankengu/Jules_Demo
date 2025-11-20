@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import os
 
 # Path to the data file
-DATA_PATH = '/tmp/file_attachments/proj/data_cleaned.csv'
+DATA_PATH = 'data_cleaned.csv'
 
 def generate_models():
     print(f"Loading data from {DATA_PATH}...")
