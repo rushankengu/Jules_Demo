@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmed - ShopEnterprise{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 600px;">
+        <div class="card-body p-5">
+            <div class="mb-4 text-success">
+                <i class="bi bi-check-circle-fill display-1"></i>
+            </div>
+            <h2 class="fw-bold mb-3">Thank You for Your Order!</h2>
+            <p class="text-muted mb-4">Your order has been placed successfully. We've sent a confirmation email to your
+                registered email address.</p>
+
+            <div class="bg-light p-3 rounded mb-4">
+                <p class="mb-0 fw-bold">Order ID: #{{ order.id }}</p>
+                <p class="mb-0 text-muted small">Date: {{ order.created_at.strftime('%Y-%m-%d') }}</p>
+            </div>
+
+            <div class="d-grid gap-2 col-md-8 mx-auto">
+                <a href="{{ url_for('orders') }}" class="btn btn-primary">View My Orders</a>
+                <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">Continue Shopping</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

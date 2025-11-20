@@ -13,7 +13,7 @@
                     {% if search %}
                     <input type="hidden" name="search" value="{{ search }}">
                     {% endif %}
-                    
+
                     <!-- Category Filter (Simple text input or dropdown if we had full list) -->
                     <!-- Since we have specific categories from Home, we might just show active category -->
                     {% if category %}
@@ -21,7 +21,8 @@
                         <label class="form-label fw-bold">Category</label>
                         <div class="input-group">
                             <input type="text" class="form-control" value="{{ category }}" disabled>
-                            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+                            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary"><i
+                                    class="bi bi-x"></i></a>
                         </div>
                         <input type="hidden" name="category" value="{{ category }}">
                     </div>
@@ -32,12 +33,14 @@
                         <label class="form-label fw-bold">Sort By</label>
                         <select class="form-select" name="sort" onchange="this.form.submit()">
                             <option value="">Relevance</option>
-                            <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
-                            <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
-                            <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Top Rated</option>
+                            <option value="price_low" {% if sort=='price_low' %}selected{% endif %}>Price: Low to High
+                            </option>
+                            <option value="price_high" {% if sort=='price_high' %}selected{% endif %}>Price: High to Low
+                            </option>
+                            <option value="rating" {% if sort=='rating' %}selected{% endif %}>Top Rated</option>
                         </select>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-primary w-100">Apply</button>
                 </form>
             </div>
@@ -48,11 +51,11 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="section-title mb-0">
                     {% if search %}
-                        Search Results for "{{ search }}"
+                    Search Results for "{{ search }}"
                     {% elif category %}
-                        {{ category }}
+                    {{ category }}
                     {% else %}
-                        All Products
+                    All Products
                     {% endif %}
                 </h2>
                 <span class="text-muted">{{ products.total }} Products found</span>
@@ -64,27 +67,27 @@
                 <div class="col">
                     <div class="card h-100 product-card">
                         <a href="{{ url_for('product_detail', product_id=product.id) }}">
-                            <img src="{{ product.image_url }}" 
-                                 onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"
-                                 class="card-img-top" alt="{{ product.name }}">
+                            <img src="{{ product.image_url }}"
+                                onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"
+                                class="card-img-top" alt="{{ product.name }}">
                         </a>
                         <div class="card-body d-flex flex-column">
                             <div class="mb-2">
                                 <span class="badge bg-light text-dark border">{{ product.brand }}</span>
                             </div>
                             <h6 class="card-title text-truncate" title="{{ product.name }}">
-                                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                                <a href="{{ url_for('product_detail', product_id=product.id) }}"
+                                    class="text-decoration-none text-dark">{{ product.name }}</a>
                             </h6>
-                            
+
                             <div class="d-flex align-items-center mb-2">
                                 <div class="text-warning small me-2">
                                     {% for i in range(5) %}
-                                        {% if i < product.rating|round|int %}
-                                        <i class="bi bi-star-fill"></i>
+                                    {% if i < product.rating|round|int %} <i class="bi bi-star-fill"></i>
                                         {% else %}
                                         <i class="bi bi-star"></i>
                                         {% endif %}
-                                    {% endfor %}
+                                        {% endfor %}
                                 </div>
                                 <span class="text-muted small">({{ product.rating }})</span>
                             </div>
@@ -93,7 +96,9 @@
                                 <h5 class="mb-0 text-primary">${{ product.price }}</h5>
                                 {% if product.stock > 0 %}
                                 <form action="{{ url_for('add_to_cart', product_id=product.id) }}" method="POST">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-cart-plus"></i> Add</button>
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm"><i
+                                            class="bi bi-cart-plus"></i> Add</button>
                                 </form>
                                 {% else %}
                                 <span class="badge bg-danger">Out of Stock</span>
@@ -110,27 +115,32 @@
                 <ul class="pagination justify-content-center">
                     {% if products.has_prev %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('products', page=products.prev_num, category=category, search=search, sort=sort) }}">Previous</a>
+                        <a class="page-link"
+                            href="{{ url_for('products', page=products.prev_num, category=category, search=search, sort=sort) }}">Previous</a>
                     </li>
                     {% else %}
                     <li class="page-item disabled"><span class="page-link">Previous</span></li>
                     {% endif %}
 
-                    {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                        {% if page_num %}
-                            {% if products.page == page_num %}
-                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
-                            {% else %}
-                            <li class="page-item"><a class="page-link" href="{{ url_for('products', page=page_num, category=category, search=search, sort=sort) }}">{{ page_num }}</a></li>
-                            {% endif %}
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                        {% endif %}
+                    {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2)
+                    %}
+                    {% if page_num %}
+                    {% if products.page == page_num %}
+                    <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link"
+                            href="{{ url_for('products', page=page_num, category=category, search=search, sort=sort) }}">{{
+                            page_num }}</a></li>
+                    {% endif %}
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
                     {% endfor %}
 
                     {% if products.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="{{ url_for('products', page=products.next_num, category=category, search=search, sort=sort) }}">Next</a>
+                        <a class="page-link"
+                            href="{{ url_for('products', page=products.next_num, category=category, search=search, sort=sort) }}">Next</a>
                     </li>
                     {% else %}
                     <li class="page-item disabled"><span class="page-link">Next</span></li>

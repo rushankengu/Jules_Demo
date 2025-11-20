@@ -6,10 +6,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
-import os
-app.secret_key = 'supersecretkey' # Change this for production
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-prod-84592')
+csrf = CSRFProtect(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'shop.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -71,6 +72,14 @@ class Order(db.Model):
     total_price = db.Column(db.Float)
     status = db.Column(db.String(50), default='Pending')
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    # Shipping Information
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    address = db.Column(db.String(300))
+    country = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    zip_code = db.Column(db.String(20))
+    payment_method = db.Column(db.String(50))
     items = db.relationship('OrderItem', backref='order', lazy=True)
 
 class OrderItem(db.Model):
@@ -107,7 +116,7 @@ def home():
         {'name': 'Gourmet & World Food', 'image': 'Goumet.png', 'query': 'Gourmet, World Food'},
         {'name': 'Cleaning & Household', 'image': 'cleaning_image_url.jpg', 'query': 'Cleaning, Household'},
         {'name': 'Beverages', 'image': 'beverages_image_url.jpg', 'query': 'Beverages'},
-        {'name': 'Foodgrains, Oil & Masala', 'image': 'Food.png', 'query': 'Foodgrains, Oil Cakes, Dairy'}, # Adjusted based on provided images/names
+        {'name': 'Foodgrains, Oil & Masala', 'image': 'Food.png', 'query': 'Foodgrains, Oil, Masala'},
         {'name': 'Baby Care', 'image': 'Baby.png', 'query': 'Baby Care'}
     ]
     return render_template('index.html', categories=categories)
@@ -116,7 +125,7 @@ def home():
 def products():
     page = request.args.get('page', 1, type=int)
     category = request.args.get('category')
-    search_query = request.args.get('search')
+    search_query = sanitize_input(request.args.get('search'))
     sort_by = request.args.get('sort')
     
     query = Product.query
@@ -188,11 +197,22 @@ def login():
             
     return render_template('auth/login.html')
 
+from email_validator import validate_email, EmailNotValidError
+import bleach
+
+def sanitize_input(text):
+    if text:
+        return bleach.clean(text, tags=[], attributes={}, strip=True)
+    return text
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = sanitize_input(request.form.get('username'))
+        password = request.form.get('password') # Don't sanitize password
+        
+        # Basic Email Validation (assuming username is email for this app, or add email field)
+        # The current model only has username. Let's assume username can be anything but we should validate it's safe.
         
         user = User.query.filter_by(username=username).first()
         if user:
@@ -231,6 +251,10 @@ def add_to_cart(product_id):
     
     item = CartItem.query.filter_by(user_id=current_user.id, product_id=product_id).first()
     if item:
+        # Check if adding one more would exceed stock
+        if item.quantity + 1 > product.stock:
+            flash(f'Only {product.stock} items available in stock.', 'warning')
+            return redirect(request.referrer)
         item.quantity += 1
     else:
         item = CartItem(user_id=current_user.id, product_id=product_id, quantity=1)
@@ -283,8 +307,28 @@ def checkout():
     total = sum(item.product.price * item.quantity for item in cart_items)
     
     if request.method == 'POST':
-        # Create Order
-        order = Order(user_id=current_user.id, total_price=total, status='Completed')
+        # Get shipping and payment information from form
+        first_name = sanitize_input(request.form.get('first_name'))
+        last_name = sanitize_input(request.form.get('last_name'))
+        address = sanitize_input(request.form.get('address'))
+        country = sanitize_input(request.form.get('country'))
+        state = sanitize_input(request.form.get('state'))
+        zip_code = sanitize_input(request.form.get('zip_code'))
+        payment_method = sanitize_input(request.form.get('paymentMethod'))
+        
+        # Create Order with shipping information
+        order = Order(
+            user_id=current_user.id, 
+            total_price=total, 
+            status='Completed',
+            first_name=first_name,
+            last_name=last_name,
+            address=address,
+            country=country,
+            state=state,
+            zip_code=zip_code,
+            payment_method=payment_method
+        )
         db.session.add(order)
         db.session.flush() # Get ID
         
@@ -309,10 +353,25 @@ def checkout():
             db.session.delete(item) # Remove from cart
             
         db.session.commit()
-        flash('Order placed successfully!', 'success')
-        return redirect(url_for('home'))
+        # flash('Order placed successfully!', 'success') # Removed flash in favor of confirmation page
+        return redirect(url_for('order_confirmation', order_id=order.id))
 
     return render_template('checkout.html', cart_items=cart_items, total=total)
+
+@app.route('/order_confirmation/<int:order_id>')
+@login_required
+def order_confirmation(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    return render_template('order_confirmation.html', order=order)
+
+@app.route('/orders')
+@login_required
+def orders():
+    user_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
+    return render_template('orders.html', orders=user_orders)
 
 @app.route('/admin')
 @login_required
@@ -323,6 +382,41 @@ def admin_dashboard():
     
     products = Product.query.paginate(page=request.args.get('page', 1, type=int), per_page=20)
     return render_template('admin.html', products=products)
+
+@app.route('/admin/edit/<int:product_id>', methods=['GET', 'POST'])
+@login_required
+def admin_edit(product_id):
+    if not current_user.is_admin:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    
+    product = Product.query.get_or_404(product_id)
+    
+    if request.method == 'POST':
+        product.name = sanitize_input(request.form.get('name'))
+        product.category = sanitize_input(request.form.get('category'))
+        product.price = float(request.form.get('price'))
+        product.stock = int(request.form.get('stock'))
+        # Add other fields as needed
+        
+        db.session.commit()
+        flash('Product updated successfully.', 'success')
+        return redirect(url_for('admin_dashboard'))
+        
+    return render_template('edit_product.html', product=product)
+
+@app.route('/admin/delete/<int:product_id>', methods=['POST'])
+@login_required
+def admin_delete(product_id):
+    if not current_user.is_admin:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('home'))
+    
+    product = Product.query.get_or_404(product_id)
+    db.session.delete(product)
+    db.session.commit()
+    flash('Product deleted successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     with app.app_context():
