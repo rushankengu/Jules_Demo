@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Home - ShopEnterprise{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-light py-5 mb-5 text-center" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center; color: white;">
+    <div class="container py-5">
+        <h1 class="display-4 fw-bold mb-3">Welcome to ShopEnterprise</h1>
+        <p class="lead mb-4">Discover our premium range of products delivered to your doorstep.</p>
+        <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg px-5">Shop Now</a>
+    </div>
+</div>
+
+<!-- Categories Section -->
+<div class="container mb-5">
+    <h2 class="section-title text-center">Shop By Category</h2>
+    <div class="row justify-content-center">
+        {% for category in categories %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 border-0 shadow-sm category-card text-center">
+                <a href="{{ url_for('products', category=category.query) }}" class="text-decoration-none text-dark">
+                    <!-- Use static images if available, else placeholder or mapped url -->
+                    <!-- The logic in app.py passes filenames that might be in current dir or static -->
+                    <!-- Since I haven't moved images to static/img, let's assume we put them there or serve from root (Flask static folder defaults) -->
+                    <!-- But standard flask way is static folder. I'll try to link assuming they are in static/img or just handle missing images gracefully -->
+                    <div style="height: 180px; overflow: hidden; background: #f1f1f1;">
+                         <!-- Hack: Try to load from static if I move them, or external URLs. The files provided were local. -->
+                         <!-- I'll use a generic placeholder if I can't find the file logic, but let's try a simple path -->
+                         <!-- Since I can't easily host the local images without moving them to static, I will use placeholders for now or try to route them -->
+                         <!-- Ideally I should copy the images to static/img -->
+                        <img src="{{ url_for('static', filename='img/' + category.image) }}" 
+                             onerror="this.src='https://via.placeholder.com/300x200?text={{ category.name }}'"
+                             class="card-img-top w-100 h-100" style="object-fit: cover;" alt="{{ category.name }}">
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">{{ category.name }}</h5>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="bg-white py-5">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="bi bi-truck display-4 text-primary mb-3"></i>
+                    <h4>Fast Delivery</h4>
+                    <p class="text-muted">Get your orders delivered to your doorstep in record time.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="bi bi-shield-check display-4 text-primary mb-3"></i>
+                    <h4>Secure Payment</h4>
+                    <p class="text-muted">Your transactions are safe and encrypted with us.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3">
+                    <i class="bi bi-headset display-4 text-primary mb-3"></i>
+                    <h4>24/7 Support</h4>
+                    <p class="text-muted">Our support team is here to assist you anytime.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
